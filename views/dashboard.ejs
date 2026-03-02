@@ -1,0 +1,520 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChurnIQ — Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #333; display: flex; height: 100vh; overflow: hidden; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #c5cbe8; border-radius: 10px; }
+    :root {
+      --bg-card: #ffffff; --bg-card2: #f4f6ff; --border: #e2e6f3;
+      --text-main: #333333; --text-muted: #888888; --text-dim: #aaaaaa;
+      --blue: #667eea; --blue-light: #764ba2; --purple: #764ba2;
+      --red: #e74c3c; --yellow: #f39c12; --green: #27ae60;
+    }
+    #sidebar {
+      width: 220px; min-width: 220px;
+      background: #fff;
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; padding-bottom: 24px;
+      transition: width 0.3s ease, min-width 0.3s ease; overflow: hidden; flex-shrink: 0;
+      box-shadow: 2px 0 16px rgba(102,126,234,0.10);
+    }
+    #sidebar.collapsed { width: 64px; min-width: 64px; }
+    .sidebar-logo { padding: 26px 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .logo-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .logo-text { font-size: 14px; font-weight: 800; color: #333; letter-spacing: -0.3px; line-height: 1.2; white-space: nowrap; transition: opacity 0.2s; }
+    .logo-text span { font-size: 10px; color: var(--text-dim); font-weight: 400; }
+    #sidebar.collapsed .logo-text { opacity: 0; pointer-events: none; }
+    .sidebar-nav { padding: 14px 10px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; cursor: pointer; margin-bottom: 3px; border: 1px solid transparent; color: var(--text-muted); transition: all 0.15s; white-space: nowrap; text-decoration: none; }
+    .nav-item:hover { background: rgba(102,126,234,0.07); color: #667eea; }
+    .nav-item.active { background: linear-gradient(135deg, #667eea, #764ba2); border-color: transparent; color: #fff; }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+    .nav-label { font-size: 13px; font-weight: 500; transition: opacity 0.2s; }
+    #sidebar.collapsed .nav-label { opacity: 0; }
+    .sidebar-toggle { margin: 0 10px; padding: 8px; border-radius: 8px; background: rgba(102,126,234,0.07); border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+    #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    #topbar { padding: 16px 30px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: #fff; flex-shrink: 0; box-shadow: 0 2px 8px rgba(102,126,234,0.07); }
+    .topbar-title { font-size: 17px; font-weight: 700; color: #333; letter-spacing: -0.4px; }
+    .topbar-sub { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .status-badge { padding: 4px 12px; border-radius: 20px; background: rgba(39,174,96,0.1); border: 1px solid rgba(39,174,96,0.3); color: var(--green); font-size: 11px; font-weight: 700; }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; }
+    #content { flex: 1; overflow-y: auto; padding: 26px 30px; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; position: relative; overflow: hidden; box-shadow: 0 2px 12px rgba(102,126,234,0.08); }
+    .stat-accent { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .stat-label { font-size: 10px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
+    .stat-value { font-size: 28px; font-weight: 900; color: #333; letter-spacing: -1px; margin: 6px 0 4px; }
+    .stat-delta { font-size: 11px; font-weight: 500; }
+    .stat-delta.pos { color: var(--green); } .stat-delta.neg { color: var(--red); } .stat-delta.neu { color: var(--text-muted); }
+    .card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; box-shadow: 0 2px 12px rgba(102,126,234,0.08); }
+    .card-title { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; }
+    .charts-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-bottom: 20px; }
+    .mb-20 { margin-bottom: 20px; }
+    .pred-table { width: 100%; border-collapse: collapse; }
+    .pred-table th { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.7px; padding: 8px 12px; text-align: left; }
+    .pred-table td { padding: 11px 12px; font-size: 13px; color: #555; border-top: 1px solid #f0f2fa; }
+    .pred-table tr:hover td { background: rgba(102,126,234,0.03); }
+    .pred-table tr td:first-child { color: #667eea; font-weight: 600; font-size: 12px; }
+    .risk-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+    .risk-tag.High   { background: rgba(231,76,60,0.10);  color: #e74c3c; border: 1px solid rgba(231,76,60,0.25); }
+    .risk-tag.Medium { background: rgba(243,156,18,0.10); color: #f39c12; border: 1px solid rgba(243,156,18,0.25); }
+    .risk-tag.Low    { background: rgba(39,174,96,0.10);  color: #27ae60; border: 1px solid rgba(39,174,96,0.25); }
+    .prob-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .prob-bar-bg { flex: 1; height: 4px; border-radius: 2px; background: var(--border); }
+    .prob-bar { height: 100%; border-radius: 2px; }
+    .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 6px; }
+    .form-group input, .form-group select { width: 100%; padding: 10px 13px; border-radius: 8px; background: #fff; border: 1.5px solid var(--border); color: #333; font-size: 13px; font-family: 'Segoe UI', sans-serif; outline: none; transition: border-color 0.15s; }
+    .form-group input:focus, .form-group select:focus { border-color: #667eea; }
+    .form-group select option { background: #fff; color: #333; }
+    .btn-primary { padding: 11px 26px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; border: none; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; font-family: 'Segoe UI', sans-serif; transition: opacity 0.15s, transform 0.15s; }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); } .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-outline { padding: 11px 20px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; background: rgba(102,126,234,0.07); border: 1.5px solid rgba(102,126,234,0.35); color: #667eea; font-family: 'Segoe UI', sans-serif; transition: all 0.15s; }
+    .btn-outline:hover { background: rgba(102,126,234,0.14); }
+    .upload-strip { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; border-radius: 10px; margin-bottom: 24px; border: 1.5px dashed #c5cbe8; background: rgba(102,126,234,0.03); }
+    .upload-strip-info h4 { font-size: 13px; color: #555; font-weight: 600; margin-bottom: 3px; }
+    .upload-strip-info p { font-size: 11px; color: var(--text-dim); }
+    #result-card { display: none; margin-top: 22px; padding: 22px 24px; border-radius: 14px; }
+    #result-card.High   { background: rgba(231,76,60,0.05);  border: 1px solid rgba(231,76,60,0.2); }
+    #result-card.Medium { background: rgba(243,156,18,0.05); border: 1px solid rgba(243,156,18,0.2); }
+    #result-card.Low    { background: rgba(39,174,96,0.05);  border: 1px solid rgba(39,174,96,0.2); }
+    .result-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; }
+    .result-prob { font-size: 44px; font-weight: 900; letter-spacing: -2px; line-height: 1; }
+    .result-prob-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .result-right { text-align: right; }
+    .result-label-title { font-size: 11px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    .result-churn { font-size: 20px; font-weight: 900; }
+    .strategy-box { padding: 14px 16px; border-radius: 10px; background: rgba(102,126,234,0.05); border: 1px solid rgba(102,126,234,0.15); }
+    .strategy-box-label { font-size: 10px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 6px; }
+    .strategy-box-text { font-size: 14px; font-weight: 600; color: #333; }
+    .model-table { width: 100%; border-collapse: collapse; }
+    .model-table th { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.7px; padding: 8px 14px; text-align: left; }
+    .model-table td { padding: 13px 14px; font-size: 13px; color: #555; border-top: 1px solid #f0f2fa; }
+    .model-table tr.best-model td { color: #667eea; }
+    .model-table tr.best-model { background: rgba(102,126,234,0.05); }
+    .best-badge { font-size: 10px; background: rgba(39,174,96,0.12); color: var(--green); padding: 2px 7px; border-radius: 10px; font-weight: 700; margin-left: 6px; }
+    .metric-mini-bar { height: 3px; border-radius: 2px; background: var(--border); margin-top: 4px; }
+    .metric-mini-bar-fill { height: 100%; border-radius: 2px; }
+    .strategy-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+    .strategy-card { border-radius: 14px; padding: 22px; background: #fff; box-shadow: 0 2px 12px rgba(102,126,234,0.08); }
+    .strategy-card.High   { border: 1px solid rgba(231,76,60,0.2); }
+    .strategy-card.Medium { border: 1px solid rgba(243,156,18,0.2); }
+    .strategy-card.Low    { border: 1px solid rgba(39,174,96,0.2); }
+    .strategy-icon { font-size: 30px; margin-bottom: 12px; }
+    .strategy-title { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+    .strategy-title.High { color: var(--red); } .strategy-title.Medium { color: var(--yellow); } .strategy-title.Low { color: var(--green); }
+    .strategy-desc { font-size: 13px; color: var(--text-dim); line-height: 1.6; }
+    .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .action-group { padding: 16px 18px; border-radius: 10px; }
+    .action-group.high-g   { background: rgba(231,76,60,0.04);  border: 1px solid rgba(231,76,60,0.12); }
+    .action-group.medium-g { background: rgba(243,156,18,0.04); border: 1px solid rgba(243,156,18,0.12); }
+    .action-group-title { font-size: 12px; font-weight: 700; margin-bottom: 10px; }
+    .action-group-title.high-t { color: var(--red); } .action-group-title.medium-t { color: var(--yellow); }
+    .action-item { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 13px; color: #666; }
+    .action-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+    .seg-row { margin-bottom: 14px; }
+    .seg-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+    .seg-name { font-size: 12px; color: #555; font-weight: 600; }
+    .seg-val { font-size: 12px; font-weight: 700; }
+    .seg-bg { height: 6px; border-radius: 3px; background: var(--border); }
+    .seg-fill { height: 100%; border-radius: 3px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+    .insight-box { margin-top: 18px; padding: 12px 14px; border-radius: 10px; background: rgba(102,126,234,0.06); border: 1px solid rgba(102,126,234,0.18); }
+    .insight-label { font-size: 12px; font-weight: 700; color: #667eea; margin-bottom: 4px; }
+    .insight-text { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+    .pagination { display: flex; align-items: center; gap: 6px; margin-top: 14px; justify-content: flex-end; }
+    .page-btn { padding: 5px 11px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: #fff; color: var(--text-muted); transition: all 0.12s; }
+    .page-btn:hover { background: rgba(102,126,234,0.07); color: #667eea; }
+    .page-btn.current { background: linear-gradient(135deg, #667eea, #764ba2); border-color: transparent; color: #fff; }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .filter-row { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+    .filter-row input, .filter-row select { padding: 7px 12px; border-radius: 8px; font-size: 12px; background: #fff; border: 1.5px solid var(--border); color: #333; outline: none; font-family: 'Segoe UI', sans-serif; }
+    .filter-row input:focus, .filter-row select:focus { border-color: #667eea; }
+    .filter-row select option { background: #fff; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(102,126,234,0.2); border-top-color: #667eea; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #toast { position: fixed; bottom: 24px; right: 24px; z-index: 999; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; display: none; animation: fadeUp 0.3s ease; }
+    #toast.success { background: rgba(39,174,96,0.95); color: #fff; }
+    #toast.error   { background: rgba(231,76,60,0.95); color: #fff; }
+    @keyframes fadeUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .charts-row { grid-template-columns: 1fr; } .form-grid { grid-template-columns: repeat(2, 1fr); } .strategy-cards { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 720px)  { .stats-grid { grid-template-columns: 1fr 1fr; } .form-grid { grid-template-columns: 1fr; } .action-grid { grid-template-columns: 1fr; } #content { padding: 16px; } }
+  </style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">⬡</div>
+    <div class="logo-text">ChurnIQ<br><span>Team 25 · <%= user.name %></span></div>
+  </div>
+  <div class="sidebar-nav">
+    <a class="nav-item active" data-tab="overview"   href="#"><span class="nav-icon">⬡</span><span class="nav-label">Overview</span></a>
+    <a class="nav-item" data-tab="predict"    href="#"><span class="nav-icon">◎</span><span class="nav-label">Predict</span></a>
+    <a class="nav-item" data-tab="analytics"  href="#"><span class="nav-icon">▦</span><span class="nav-label">Analytics</span></a>
+    <a class="nav-item" data-tab="models"     href="#"><span class="nav-icon">◈</span><span class="nav-label">Models</span></a>
+    <a class="nav-item" data-tab="strategies" href="#"><span class="nav-icon">⬗</span><span class="nav-label">Strategies</span></a>
+  </div>
+  <button class="sidebar-toggle" id="toggleSidebar">◀</button>
+</nav>
+
+<div id="main">
+  <div id="topbar">
+    <div>
+      <div class="topbar-title" id="tab-title">Overview</div>
+      <div class="topbar-sub"   id="tab-sub">System-wide churn metrics and recent predictions</div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-badge">● Model Active</div>
+      <div class="avatar"><%= user.name ? user.name[0].toUpperCase() : 'U' %></div>
+      <a href="/logout" style="font-size:12px;color:#888;text-decoration:none;">Sign out</a>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- OVERVIEW -->
+    <div class="tab-pane active" id="tab-overview">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-accent" style="background:linear-gradient(90deg,#667eea,transparent)"></div><div class="stat-label">Total Customers</div><div class="stat-value" id="stat-total">—</div><div class="stat-delta neu" id="stat-total-delta">Loading…</div></div>
+        <div class="stat-card"><div class="stat-accent" style="background:linear-gradient(90deg,#e74c3c,transparent)"></div><div class="stat-label">Churn Rate</div><div class="stat-value" id="stat-churn-rate">—</div><div class="stat-delta" id="stat-churn-delta">Loading…</div></div>
+        <div class="stat-card"><div class="stat-accent" style="background:linear-gradient(90deg,#f39c12,transparent)"></div><div class="stat-label">High Risk Customers</div><div class="stat-value" id="stat-high-risk">—</div><div class="stat-delta neg" id="stat-high-delta">Loading…</div></div>
+        <div class="stat-card"><div class="stat-accent" style="background:linear-gradient(90deg,#27ae60,transparent)"></div><div class="stat-label">Model Accuracy</div><div class="stat-value" id="stat-accuracy">—</div><div class="stat-delta neu" id="stat-model-name">Loading…</div></div>
+      </div>
+      <div class="charts-row">
+        <div class="card"><div class="card-title">Monthly Churn vs Retained</div><canvas id="churnTrendChart" height="200"></canvas></div>
+        <div class="card"><div class="card-title">Risk Distribution</div><canvas id="riskPieChart" height="200"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent Predictions</div>
+        <div class="filter-row">
+          <input type="text" id="search-input" placeholder="Search customer ID or name…" style="flex:1;min-width:160px;" />
+          <select id="risk-filter"><option value="">All Risk Levels</option><option value="High">High Risk</option><option value="Medium">Medium Risk</option><option value="Low">Low Risk</option></select>
+          <select id="churn-filter"><option value="">All Predictions</option><option value="1">Will Churn</option><option value="0">Will Retain</option></select>
+          <button class="btn-outline" onclick="loadPredictions(1)">Filter</button>
+        </div>
+        <table class="pred-table">
+          <thead><tr><th>Customer ID</th><th>Name</th><th>Risk Level</th><th>Churn Prob.</th><th>Prediction</th><th>Strategy</th><th>Date</th></tr></thead>
+          <tbody id="pred-tbody"><tr><td colspan="7" style="text-align:center;color:#aaa;padding:30px;">Loading…</td></tr></tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+
+    <!-- PREDICT -->
+    <div class="tab-pane" id="tab-predict">
+      <div class="card">
+        <div class="card-title">Customer Churn Prediction</div>
+        <p style="font-size:13px;color:#aaa;margin-bottom:22px;margin-top:-6px;">Enter customer attributes to generate a churn probability score and retention strategy.</p>
+        <div class="upload-strip">
+          <div class="upload-strip-info"><h4>📂 Bulk Predict via CSV Upload</h4><p>Upload a structured CSV with required columns to run predictions on multiple customers at once.</p></div>
+          <div><input type="file" id="csv-file-input" accept=".csv" style="display:none" /><button class="btn-outline" id="upload-btn" onclick="document.getElementById('csv-file-input').click()">Upload CSV</button></div>
+        </div>
+        <form id="predict-form" onsubmit="return false;">
+          <div class="form-grid">
+            <div class="form-group"><label>Customer ID *</label><input type="text" name="customer_id" placeholder="e.g. C-1042" required /></div>
+            <div class="form-group"><label>Customer Name</label><input type="text" name="customer_name" placeholder="e.g. Ananya Sharma" /></div>
+            <div class="form-group"><label>Age</label><input type="number" name="age" placeholder="25" min="0" /></div>
+            <div class="form-group"><label>Gender</label><select name="gender"><option value="">Select…</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+            <div class="form-group"><label>Days Subscribed</label><input type="number" name="no_of_days_subscribed" placeholder="180" min="0" /></div>
+            <div class="form-group"><label>Weekly Mins Watched</label><input type="number" name="weekly_mins_watched" placeholder="120" min="0" /></div>
+            <div class="form-group"><label>Min Daily Mins</label><input type="number" name="minimum_daily_mins" placeholder="10" min="0" /></div>
+            <div class="form-group"><label>Max Daily Mins</label><input type="number" name="maximum_daily_mins" placeholder="90" min="0" /></div>
+            <div class="form-group"><label>Weekly Max Night Mins</label><input type="number" name="weekly_max_night_mins" placeholder="45" min="0" /></div>
+            <div class="form-group"><label>Videos Watched</label><input type="number" name="videos_watched" placeholder="42" min="0" /></div>
+            <div class="form-group"><label>Max Days Inactive ⚠️</label><input type="number" name="maximum_days_inactive" placeholder="7" min="0" /></div>
+            <div class="form-group"><label>Support Calls ⚠️</label><input type="number" name="customer_support_calls" placeholder="2" min="0" /></div>
+            <div class="form-group"><label>Multi-Screen</label><select name="multi_screen"><option value="">Select…</option><option>Yes</option><option>No</option></select></div>
+            <div class="form-group"><label>Mail Subscribed</label><select name="mail_subscribed"><option value="">Select…</option><option>Yes</option><option>No</option></select></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button class="btn-primary" type="button" id="predict-btn" onclick="runPrediction()">⚡ Run Prediction</button>
+            <button class="btn-outline" type="reset" onclick="document.getElementById('result-card').style.display='none'">Clear</button>
+          </div>
+        </form>
+        <div id="result-card">
+          <div class="result-top">
+            <div><div class="stat-label" style="margin-bottom:8px;">Churn Probability</div><div class="result-prob" id="result-prob">—</div><div class="result-prob-label">Predicted by Random Forest</div></div>
+            <div class="result-right"><div id="result-risk-tag"></div><div style="margin-top:12px;"><div class="result-label-title">Prediction</div><div class="result-churn" id="result-churn-label">—</div></div></div>
+          </div>
+          <div class="strategy-box"><div class="strategy-box-label">Recommended Retention Strategy</div><div class="strategy-box-text" id="result-strategy">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="tab-pane" id="tab-analytics">
+      <div class="card mb-20"><div class="card-title">Feature Importance Ranking</div><canvas id="featureChart" height="180"></canvas></div>
+      <div class="charts-row">
+        <div class="card"><div class="card-title">Churn Trend — 6 Months</div><canvas id="lineChart" height="200"></canvas></div>
+        <div class="card"><div class="card-title">Risk Segment Breakdown</div><div id="seg-bars"><div style="text-align:center;color:#aaa;padding:20px 0;font-size:13px;">Loading…</div></div></div>
+      </div>
+    </div>
+
+    <!-- MODELS -->
+    <div class="tab-pane" id="tab-models">
+      <div class="card mb-20">
+        <div class="card-title">Model Performance Comparison</div>
+        <table class="model-table" id="model-table">
+          <thead><tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1-Score</th></tr></thead>
+          <tbody><tr><td colspan="5" style="text-align:center;color:#aaa;padding:30px;">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="card"><div class="card-title">Radar — Model Comparison</div><div style="max-width:500px;margin:0 auto;"><canvas id="radarChart" height="280"></canvas></div></div>
+    </div>
+
+    <!-- STRATEGIES -->
+    <div class="tab-pane" id="tab-strategies">
+      <div class="strategy-cards">
+        <div class="strategy-card High"><div class="strategy-icon">🔴</div><div class="strategy-title High">High Risk</div><div class="strategy-desc">Churn probability ≥ 70%. Immediate intervention required.</div></div>
+        <div class="strategy-card Medium"><div class="strategy-icon">🟡</div><div class="strategy-title Medium">Medium Risk</div><div class="strategy-desc">Churn probability 40–70%. Proactive engagement recommended.</div></div>
+        <div class="strategy-card Low"><div class="strategy-icon">🟢</div><div class="strategy-title Low">Low Risk</div><div class="strategy-desc">Churn probability &lt; 40%. Maintain routine engagement.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Retention Playbook</div>
+        <div class="action-grid">
+          <div class="action-group high-g">
+            <div class="action-group-title high-t">🔴 High Risk — Immediate Actions</div>
+            <div class="action-item"><div class="action-dot" style="background:#e74c3c"></div>Personal outreach call within 24 hours</div>
+            <div class="action-item"><div class="action-dot" style="background:#e74c3c"></div>Offer 20–30% discount on renewal</div>
+            <div class="action-item"><div class="action-dot" style="background:#e74c3c"></div>Assign dedicated account manager</div>
+            <div class="action-item"><div class="action-dot" style="background:#e74c3c"></div>Escalate to customer success within 48h</div>
+          </div>
+          <div class="action-group medium-g">
+            <div class="action-group-title medium-t">🟡 Medium Risk — Engagement Actions</div>
+            <div class="action-item"><div class="action-dot" style="background:#f39c12"></div>Personalized re-engagement email</div>
+            <div class="action-item"><div class="action-dot" style="background:#f39c12"></div>Highlight underutilized features</div>
+            <div class="action-item"><div class="action-dot" style="background:#f39c12"></div>Push notification with exclusive offer</div>
+            <div class="action-item"><div class="action-dot" style="background:#f39c12"></div>Send monthly usage summary report</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding:14px 16px;border-radius:10px;background:rgba(39,174,96,0.05);border:1px solid rgba(39,174,96,0.15);">
+          <div style="font-size:12px;font-weight:700;color:#27ae60;margin-bottom:6px;">🟢 Low Risk — Retention Maintenance</div>
+          <div style="display:flex;gap:24px;flex-wrap:wrap;">
+            <div class="action-item" style="margin:0;"><div class="action-dot" style="background:#27ae60;margin-top:0;"></div>Monthly newsletter</div>
+            <div class="action-item" style="margin:0;"><div class="action-dot" style="background:#27ae60;margin-top:0;"></div>Loyalty rewards program</div>
+            <div class="action-item" style="margin:0;"><div class="action-dot" style="background:#27ae60;margin-top:0;"></div>Early access to new features</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const TAB_META = {
+  overview:   { title: 'Overview',             sub: 'System-wide churn metrics and recent predictions' },
+  predict:    { title: 'Predict Churn',         sub: 'Run single or bulk predictions on customer records' },
+  analytics:  { title: 'Analytics',            sub: 'Feature importance, risk segments & churn trends' },
+  models:     { title: 'Model Evaluation',     sub: 'Compare classification & ensemble model performance' },
+  strategies: { title: 'Retention Strategies', sub: 'Risk-based action playbook for customer retention' },
+};
+let chartsInit = {};
+
+document.getElementById('toggleSidebar').addEventListener('click', function () {
+  const sb = document.getElementById('sidebar');
+  const collapsed = sb.classList.toggle('collapsed');
+  this.textContent = collapsed ? '▶' : '◀';
+});
+
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', function (e) {
+    e.preventDefault();
+    const tab = this.dataset.tab;
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    this.classList.add('active');
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('tab-title').textContent = TAB_META[tab].title;
+    document.getElementById('tab-sub').textContent   = TAB_META[tab].sub;
+    if (tab === 'analytics' && !chartsInit.analytics) { loadAnalytics();  chartsInit.analytics = true; }
+    if (tab === 'models'    && !chartsInit.models)    { loadModels();     chartsInit.models    = true; }
+  });
+});
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = type; t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3500);
+}
+
+async function apiFetch(url, opts = {}) {
+  const res = await fetch(url, { headers: { 'Content-Type': 'application/json', ...opts.headers }, ...opts });
+  if (!res.ok) { const err = await res.json().catch(() => ({ error: 'Unknown error' })); throw new Error(err.error || res.statusText); }
+  return res.json();
+}
+
+Chart.defaults.color = '#888888';
+Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+
+async function loadOverview() {
+  try {
+    const [stats, trend, segments] = await Promise.all([
+      apiFetch('/api/stats'),
+      apiFetch('/api/analytics/churn-trend'),
+      apiFetch('/api/analytics/risk-segments'),
+    ]);
+    animateNumber('stat-total',      stats.totalCustomers, 0, '');
+    animateNumber('stat-churn-rate', stats.churnRate,      1, '%');
+    animateNumber('stat-high-risk',  stats.highRiskCount,  0, '');
+    animateNumber('stat-accuracy',   stats.modelAccuracy,  1, '%');
+    document.getElementById('stat-total-delta').textContent  = stats.totalPredictions + ' predictions run';
+    document.getElementById('stat-model-name').textContent   = stats.modelName;
+    document.getElementById('stat-high-delta').textContent   = stats.highRiskCount + ' flagged for intervention';
+    const delta = stats.churnDelta;
+    const deltaEl = document.getElementById('stat-churn-delta');
+    if (delta !== null) { deltaEl.textContent = (delta > 0 ? '▲' : '▼') + ' ' + Math.abs(delta) + '% vs last month'; deltaEl.className = 'stat-delta ' + (delta > 0 ? 'neg' : 'pos'); }
+    else { deltaEl.textContent = 'No prior month data'; deltaEl.className = 'stat-delta neu'; }
+
+    new Chart(document.getElementById('churnTrendChart'), {
+      type: 'bar',
+      data: { labels: trend.map(d => d.name), datasets: [
+        { label: 'Churned',  data: trend.map(d => d.churn),    backgroundColor: '#e74c3c', borderRadius: 4 },
+        { label: 'Retained', data: trend.map(d => d.retained), backgroundColor: '#667eea', borderRadius: 4 },
+      ]},
+      options: { responsive: true, maintainAspectRatio: true, scales: { x: { grid: { display: false }, ticks: { color: '#aaa', font: { size: 11 } } }, y: { grid: { color: '#f0f2fa' }, ticks: { color: '#aaa', font: { size: 11 } } } }, plugins: { legend: { labels: { color: '#888', font: { size: 11 } } } } },
+    });
+
+    new Chart(document.getElementById('riskPieChart'), {
+      type: 'doughnut',
+      data: { labels: segments.map(s => s.name), datasets: [{ data: segments.map(s => s.value), backgroundColor: segments.map(s => s.color), borderWidth: 0, hoverOffset: 6 }] },
+      options: { responsive: true, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { color: '#888', font: { size: 11 }, padding: 14 } }, tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed + '%' } } } },
+    });
+
+    await loadPredictions(1);
+  } catch (err) { showToast('Failed to load overview: ' + err.message, 'error'); }
+}
+
+async function loadPredictions(page) {
+  const search = document.getElementById('search-input').value.trim();
+  const risk   = document.getElementById('risk-filter').value;
+  const churn  = document.getElementById('churn-filter').value;
+  const params = new URLSearchParams({ page, limit: 10 });
+  if (search) params.set('search', search);
+  if (risk)   params.set('risk', risk);
+  if (churn)  params.set('churn', churn);
+  const tbody = document.getElementById('pred-tbody');
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:22px;"><span class="spinner"></span>Loading…</td></tr>';
+  try {
+    const { predictions, pagination } = await apiFetch('/api/predictions?' + params);
+    if (!predictions.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:30px;">No predictions yet. Run one from the Predict tab.</td></tr>'; document.getElementById('pagination').innerHTML = ''; return; }
+    tbody.innerHTML = predictions.map(p => {
+      const pct    = (p.churn_probability * 100).toFixed(1);
+      const barCol = p.risk_category === 'High' ? '#e74c3c' : p.risk_category === 'Medium' ? '#f39c12' : '#27ae60';
+      const date   = new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      return '<tr><td>' + esc(p.customer_id) + '</td><td>' + esc(p.customer_name) + '</td><td><span class="risk-tag ' + p.risk_category + '">' + p.risk_category + '</span></td><td><div class="prob-bar-wrap"><span style="font-size:13px;font-weight:700;color:' + barCol + ';min-width:42px;">' + pct + '%</span><div class="prob-bar-bg"><div class="prob-bar" style="width:' + pct + '%;background:' + barCol + ';"></div></div></div></td><td style="color:' + (p.churn_prediction ? '#e74c3c' : '#27ae60') + ';font-weight:700;">' + (p.churn_prediction ? 'Will Churn' : 'Will Retain') + '</td><td style="font-size:12px;color:#aaa;">' + esc(p.recommended_strategy) + '</td><td style="font-size:12px;color:#aaa;">' + date + '</td></tr>';
+    }).join('');
+    const pg = document.getElementById('pagination');
+    const { totalPages } = pagination;
+    if (totalPages <= 1) { pg.innerHTML = ''; return; }
+    let btns = '<button class="page-btn" onclick="loadPredictions(' + (page-1) + ')" ' + (page===1?'disabled':'') + '>‹ Prev</button>';
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || Math.abs(i - page) <= 1) btns += '<button class="page-btn ' + (i===page?'current':'') + '" onclick="loadPredictions(' + i + ')">' + i + '</button>';
+      else if (Math.abs(i - page) === 2) btns += '<span style="color:#aaa;padding:0 4px;">…</span>';
+    }
+    btns += '<button class="page-btn" onclick="loadPredictions(' + (page+1) + ')" ' + (page===totalPages?'disabled':'') + '>Next ›</button>';
+    pg.innerHTML = btns;
+  } catch (err) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;padding:22px;">Error: ' + esc(err.message) + '</td></tr>'; }
+}
+
+async function runPrediction() {
+  const form = document.getElementById('predict-form');
+  const btn  = document.getElementById('predict-btn');
+  const data = {};
+  new FormData(form).forEach((val, key) => { if (val) data[key] = val; });
+  if (!data.customer_id) { showToast('Customer ID is required', 'error'); return; }
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Predicting…';
+  try {
+    const result = await apiFetch('/api/predict', { method: 'POST', body: JSON.stringify(data) });
+    const pct    = (result.churn_probability * 100).toFixed(1);
+    const color  = result.risk_category === 'High' ? '#e74c3c' : result.risk_category === 'Medium' ? '#f39c12' : '#27ae60';
+    const card   = document.getElementById('result-card');
+    card.className = result.risk_category; card.style.display = 'block';
+    document.getElementById('result-prob').textContent        = pct + '%';
+    document.getElementById('result-prob').style.color        = color;
+    document.getElementById('result-churn-label').textContent = result.churn_prediction ? 'Will Churn' : 'Will Retain';
+    document.getElementById('result-churn-label').style.color = color;
+    document.getElementById('result-strategy').textContent    = result.recommended_strategy;
+    document.getElementById('result-risk-tag').innerHTML      = '<span class="risk-tag ' + result.risk_category + '">' + result.risk_category + ' Risk</span>';
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    showToast('Prediction complete — ' + result.risk_category + ' risk');
+  } catch (err) { showToast('Prediction failed: ' + err.message, 'error'); }
+  finally { btn.disabled = false; btn.innerHTML = '⚡ Run Prediction'; }
+}
+
+document.getElementById('csv-file-input').addEventListener('change', async function () {
+  if (!this.files.length) return;
+  const btn = document.getElementById('upload-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Uploading…';
+  const form = new FormData(); form.append('dataset', this.files[0]);
+  try {
+    const res  = await fetch('/api/upload', { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showToast('✓ ' + data.saved + ' predictions saved');
+  } catch (err) { showToast('Upload failed: ' + err.message, 'error'); }
+  finally { btn.disabled = false; btn.innerHTML = 'Upload CSV'; this.value = ''; }
+});
+
+async function loadAnalytics() {
+  try {
+    const [features, trend, segments] = await Promise.all([apiFetch('/api/analytics/feature-importance'), apiFetch('/api/analytics/churn-trend'), apiFetch('/api/analytics/risk-segments')]);
+    new Chart(document.getElementById('featureChart'), {
+      type: 'bar',
+      data: { labels: features.map(f => f.feature), datasets: [{ data: features.map(f => parseFloat((f.importance*100).toFixed(1))), backgroundColor: features.map((_, i) => `hsl(${240 + i*15}, 60%, ${62 - i*4}%)`), borderRadius: 4 }] },
+      options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x + '%' } } }, scales: { x: { grid: { color: '#f0f2fa' }, ticks: { color: '#aaa', font: { size: 11 }, callback: v => v + '%' } }, y: { grid: { display: false }, ticks: { color: '#555', font: { size: 12 } } } } },
+    });
+    new Chart(document.getElementById('lineChart'), {
+      type: 'line',
+      data: { labels: trend.map(d => d.name), datasets: [{ label: 'Churned', data: trend.map(d => d.churn), borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.07)', fill: true, tension: 0.4, pointBackgroundColor: '#e74c3c', pointRadius: 4 }, { label: 'Retained', data: trend.map(d => d.retained), borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,0.07)', fill: true, tension: 0.4, pointBackgroundColor: '#667eea', pointRadius: 4 }] },
+      options: { responsive: true, scales: { x: { grid: { display: false }, ticks: { color: '#aaa', font: { size: 11 } } }, y: { grid: { color: '#f0f2fa' }, ticks: { color: '#aaa', font: { size: 11 } } } }, plugins: { legend: { labels: { color: '#888', font: { size: 11 } } } } },
+    });
+    const hd = segments.find(s => s.name.includes('High'))   || {};
+    const md = segments.find(s => s.name.includes('Medium')) || {};
+    const ld = segments.find(s => s.name.includes('Low'))    || {};
+    document.getElementById('seg-bars').innerHTML =
+      [{ name:'High Risk', value: hd.value||0, color:'#e74c3c' }, { name:'Medium Risk', value: md.value||0, color:'#f39c12' }, { name:'Low Risk', value: ld.value||0, color:'#27ae60' }]
+      .map(s => '<div class="seg-row"><div class="seg-header"><span class="seg-name">' + s.name + '</span><span class="seg-val" style="color:' + s.color + '">' + s.value + '%</span></div><div class="seg-bg"><div class="seg-fill" style="width:' + s.value + '%;background:' + s.color + ';"></div></div></div>').join('')
+      + '<div class="insight-box"><div class="insight-label">📊 Insight</div><div class="insight-text">' + (hd.value||0) + '% of customers are high risk — prioritise immediate outreach to prevent revenue attrition.</div></div>';
+  } catch (err) { showToast('Failed to load analytics: ' + err.message, 'error'); }
+}
+
+async function loadModels() {
+  try {
+    const models = await apiFetch('/api/models/comparison');
+    document.querySelector('#model-table tbody').innerHTML = models.map(m =>
+      '<tr class="' + (m.selected?'best-model':'') + '"><td>' + esc(m.model) + (m.selected?'<span class="best-badge">BEST</span>':'') + '</td>' +
+      ['accuracy','precision','recall','f1'].map(k => '<td><div style="font-weight:700;">' + m[k] + '%</div><div class="metric-mini-bar"><div class="metric-mini-bar-fill" style="width:' + m[k] + '%;background:' + (m.selected?'#667eea':'#c5cbe8') + ';"></div></div></td>').join('') + '</tr>'
+    ).join('');
+    const colors = ['#667eea','#764ba2','#e74c3c','#f39c12','#27ae60','#888'];
+    new Chart(document.getElementById('radarChart'), {
+      type: 'radar',
+      data: { labels: ['Accuracy','Precision','Recall','F1-Score'], datasets: models.map((m,i) => ({ label: m.model, data: [m.accuracy,m.precision,m.recall,m.f1], borderColor: colors[i]||'#888', backgroundColor: (colors[i]||'#888')+'22', borderWidth: 2, pointBackgroundColor: colors[i]||'#888' })) },
+      options: { responsive: true, scales: { r: { min: 70, max: 100, grid: { color: '#e2e6f3' }, pointLabels: { color: '#888', font: { size: 11 } }, ticks: { color: '#aaa', font: { size: 9 }, backdropColor: 'transparent' } } }, plugins: { legend: { position: 'bottom', labels: { color: '#888', font: { size: 11 }, padding: 12 } } } },
+    });
+  } catch (err) { showToast('Failed to load models: ' + err.message, 'error'); }
+}
+
+function animateNumber(id, target, decimals, suffix) {
+  const el = document.getElementById(id); if (!el) return;
+  let current = 0; const step = target / (1000/16);
+  const timer = setInterval(() => { current += step; if (current >= target) { el.textContent = parseFloat(target).toFixed(decimals) + suffix; clearInterval(timer); } else { el.textContent = current.toFixed(decimals) + suffix; } }, 16);
+}
+function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+document.addEventListener('DOMContentLoaded', () => { loadOverview(); chartsInit.overview = true; });
+</script>
+</body>
+</html>
