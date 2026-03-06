@@ -13,8 +13,6 @@ services:
     restart: always
     volumes:
       - mongo-data:/data/db
-    ports:
-      - 27017:27017
 
   server:
     build:
