@@ -44,12 +44,41 @@ passport.use(new LocalStrategy(
 // ──── Google OAuth Strategy ────
 passport.use(new GoogleStrategy(
   {
-    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientID:     process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/auth/google/callback"
+    callbackURL:  process.env.GOOGLE_CALLBACK_URL || '/auth/google/callback',
   },
-  (accessToken, refreshToken, profile, done) => {
-    return done(null, profile);
+  async (accessToken, refreshToken, profile, done) => {
+    try {
+      // Find existing user by googleId or email
+      let user = await User.findOne({ googleId: profile.id });
+
+      if (!user) {
+        const email = profile.emails?.[0]?.value;
+        if (email) {
+          user = await User.findOne({ email });
+        }
+
+        if (user) {
+          // Link Google account to existing email/password account
+          user.googleId = profile.id;
+          user.avatar   = user.avatar || profile.photos?.[0]?.value || '';
+          await user.save();
+        } else {
+          // Create new user from Google profile
+          user = await User.create({
+            googleId: profile.id,
+            name:     profile.displayName,
+            email:    profile.emails?.[0]?.value,
+            avatar:   profile.photos?.[0]?.value || '',
+          });
+        }
+      }
+
+      return done(null, user);
+    } catch (err) {
+      return done(err, null);
+    }
   }
 ));
 
