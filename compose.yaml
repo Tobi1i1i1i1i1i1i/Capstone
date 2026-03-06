@@ -17,16 +17,18 @@ services:
   server:
     build:
       context: .
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       NODE_ENV: production
       PORT: 3000
-      MONGODB_URI: mongodb://172.17.0.1:27017/loginpage
-      SESSION_SECRET: some-long-random-string
+      MONGODB_URI: ${MONGODB_URI}
+      SESSION_SECRET: ${SESSION_SECRET}
 # Google OAuth credentials
 # Get these from https://console.cloud.google.com/apis/credentials
-      GOOGLE_CLIENT_ID: your-google-client-id
-      GOOGLE_CLIENT_SECRET: your-google-client-secret
-      GOOGLE_CALLBACK_URL: http://192.168.29.6:3000/auth/google/callback
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
 # Flask ML API — runs inside the same container on port 5000
       ML_API_URL: http://localhost:5000
 # Set MODEL_PATH to your .pkl file path inside the container
