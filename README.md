@@ -83,12 +83,29 @@ npm start
 ### Run with Docker
 
 ```bash
-# ml/model.pkl and ml/scaler.pkl must exist before building
+# 1. Copy and fill in your environment variables
+cp .env.example .env
+# Edit .env — set MONGODB_URI, SESSION_SECRET, and optionally Google OAuth keys
+
+# 2. Train the model if you haven't already (generates ml/model.pkl + ml/scaler.pkl)
+cd ml && pip install -r requirements.txt && python train.py && cd ..
+
+# 3. Build and start all containers
 docker compose up -d --build
 ```
 
 - App: `http://localhost:3000`
 - ML API: `http://localhost:5000`
+
+> Docker Compose reads all credentials from your local `.env` file — no secrets are stored in the repo.
+
+#### Connecting to a host MongoDB from Docker (Linux)
+
+The `compose.yaml` uses `extra_hosts: host.docker.internal:host-gateway` so containers can reach services running on your host machine. Set your `MONGODB_URI` in `.env` to your host's LAN IP:
+
+```env
+MONGODB_URI=mongodb://<your-lan-ip>:27017/loginpage
+```
 
 ---
 
