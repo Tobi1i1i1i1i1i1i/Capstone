@@ -52,7 +52,7 @@ CSV Dataset → Preprocessing → Training (scikit-learn)
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/Tobi1i1i1i1i1i1i/Capstone.git
+git clone https://github.com/mitratobi/Capstone.git
 cd Capstone
 
 # 2. Install Node.js dependencies
