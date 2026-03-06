@@ -18,10 +18,9 @@ RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev
 
-# ── Python dependencies (isolated venv) ───────────────────────────────────────
+# ── Python dependencies ───────────────────────────────────────────────────────
 COPY ml/requirements.txt /tmp/ml-requirements.txt
-RUN python3 -m venv /opt/mlenv && \
-    /opt/mlenv/bin/pip install --no-cache-dir -r /tmp/ml-requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /tmp/ml-requirements.txt
 
 # ── Application source ────────────────────────────────────────────────────────
 COPY . .
@@ -33,4 +32,4 @@ USER node
 # ── Startup script: Flask (background) + Node.js (foreground) ─────────────────
 EXPOSE 3000 5000
 
-CMD sh -c "cd /usr/src/app/ml && /opt/mlenv/bin/gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 60 app:app & npm run dev"
+CMD sh -c "cd /usr/src/app/ml && gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 60 app:app & npm run dev"
