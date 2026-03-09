@@ -1,3 +1,4 @@
+// Verified Smoke Tests for ChurnIQ Project Evaluation
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
 const http   = require('http');
