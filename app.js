@@ -84,7 +84,7 @@ app.get('/auth/google/callback',
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'ok', 
-    message: 'Server is running',
+    message: 'Server is healthy and active',
     timestamp: new Date().toISOString() 
   });
 });
