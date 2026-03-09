@@ -80,7 +80,13 @@ app.get('/auth/google/callback',
 );
 
 // ── Health check ──────────────────────────────────────────────────────────────
-app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString() 
+  });
+});
 
 // ── Global error handler ──────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
