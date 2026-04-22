@@ -578,41 +578,70 @@ async function loadPredictions(page) {
 async function runPrediction() {
   const form = document.getElementById('predict-form');
   const btn  = document.getElementById('predict-btn');
-  const data = {};
-  new FormData(form).forEach((val, key) => { if (val) data[key] = val; });
-  if (!data.customer_id) { showToast('Customer ID is required', 'error'); return; }
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Predicting…';
-  try {
-    const result = await apiFetch('/api/predict', { method: 'POST', body: JSON.stringify(data) });
-    const pct    = (result.churn_probability * 100).toFixed(1);
-    const color  = result.risk_category === 'High' ? '#e74c3c' : result.risk_category === 'Medium' ? '#f39c12' : '#27ae60';
-    const card   = document.getElementById('result-card');
-    card.className = result.risk_category; card.style.display = 'block';
-    document.getElementById('result-prob').textContent        = pct + '%';
-    document.getElementById('result-prob').style.color        = color;
-    document.getElementById('result-churn-label').textContent = result.churn_prediction ? 'Will Churn' : 'Will Retain';
-    document.getElementById('result-churn-label').style.color = color;
-    document.getElementById('result-strategy').textContent    = result.recommended_strategy;
-    document.getElementById('result-risk-tag').innerHTML      = '<span class="risk-tag ' + result.risk_category + '">' + result.risk_category + ' Risk</span>';
-    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    showToast('Prediction complete — ' + result.risk_category + ' risk');
-  } catch (err) { showToast('Prediction failed: ' + err.message, 'error'); }
-  finally { btn.disabled = false; btn.innerHTML = '⚡ Run Prediction'; }
-}
 
-document.getElementById('csv-file-input').addEventListener('change', async function () {
-  if (!this.files.length) return;
-  const btn = document.getElementById('upload-btn');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Uploading…';
-  const form = new FormData(); form.append('dataset', this.files[0]);
+  const data = {};
+  new FormData(form).forEach((val, key) => {
+    if (val) data[key] = val;
+  });
+
+  if (!data.customer_id) {
+    showToast('Customer ID is required', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Predicting…';
+
   try {
-    const res  = await fetch('/api/upload', { method: 'POST', body: form });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    showToast('✓ ' + data.saved + ' predictions saved');
-  } catch (err) { showToast('Upload failed: ' + err.message, 'error'); }
-  finally { btn.disabled = false; btn.innerHTML = 'Upload CSV'; this.value = ''; }
-});
+    // ✅ CALL FLASK DIRECTLY (instead of /api/predict)
+    const response = await fetch('http://127.0.0.1:5000/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Prediction failed');
+
+    const pct   = (result.churn_probability * 100).toFixed(1);
+    const color = result.risk_category === 'High'
+      ? '#e74c3c'
+      : result.risk_category === 'Medium'
+      ? '#f39c12'
+      : '#27ae60';
+
+    const card = document.getElementById('result-card');
+    card.className = result.risk_category;
+    card.style.display = 'block';
+
+    document.getElementById('result-prob').textContent = pct + '%';
+    document.getElementById('result-prob').style.color = color;
+
+    document.getElementById('result-churn-label').textContent =
+      result.churn_prediction ? 'Will Churn' : 'Will Retain';
+    document.getElementById('result-churn-label').style.color = color;
+
+    // ✅ FIX: HANDLE MULTIPLE STRATEGIES (array)
+    document.getElementById('result-strategy').innerHTML =
+      result.recommended_strategies
+        .map(s => '• ' + s)
+        .join('<br>');
+
+    document.getElementById('result-risk-tag').innerHTML =
+      '<span class="risk-tag ' + result.risk_category + '">' +
+      result.risk_category + ' Risk</span>';
+
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    showToast('Prediction complete — ' + result.risk_category + ' risk');
+
+  } catch (err) {
+    showToast('Prediction failed: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Run Prediction';
+  }
+}
 
 async function loadAnalytics() {
   try {

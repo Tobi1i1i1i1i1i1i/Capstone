@@ -5,16 +5,19 @@ const PredictionSchema = new mongoose.Schema({
   customer_name:        { type: String, default: 'Unknown' },
 
   // ── Model Output ──────────────────────────────────────────────────────────
-  churn_prediction:     { type: Number, enum: [0, 1], required: true },   // 0 = No Churn, 1 = Churn
-  churn_probability:    { type: Number, min: 0, max: 1, required: true },  // 0.0 – 1.0
+  churn_prediction:     { type: Number, enum: [0, 1], required: true },
+  churn_probability:    { type: Number, min: 0, max: 1, required: true },
   risk_category:        { type: String, enum: ['High', 'Medium', 'Low'], required: true },
-  recommended_strategy: { type: String, required: true },
+
+  // ✅ FIX: array instead of string
+  churn_reasons:        [{ type: String }],
+  recommended_strategies: [{ type: String }],
 
   // ── Model Meta ────────────────────────────────────────────────────────────
   model_used:           { type: String, default: 'Random Forest' },
   model_version:        { type: String, default: '1.0' },
 
-  // ── Input snapshot (stored for auditability) ──────────────────────────────
+  // ── Input snapshot ────────────────────────────────────────────────────────
   input_snapshot:       { type: mongoose.Schema.Types.Mixed },
 
   // ── Audit ─────────────────────────────────────────────────────────────────
