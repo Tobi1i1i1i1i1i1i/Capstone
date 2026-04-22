@@ -9,7 +9,9 @@
     "seed": "node scripts/seed.js",
     "test": "node --test test.js",
     "docker:up": "docker-compose up -d --build",
-    "docker:down": "docker-compose down"
+    "docker:down": "docker-compose down",
+    "build:client": "cd client && npm install && npm run build",
+    "start:full": "npm run build:client && node app.js"
   },
   "keywords": [],
   "author": "",

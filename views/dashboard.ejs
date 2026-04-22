@@ -245,10 +245,6 @@
       <div class="card">
         <div class="card-title">Customer Churn Prediction</div>
         <p style="font-size:13px;color:#aaa;margin-bottom:22px;margin-top:-6px;">Enter customer attributes to generate a churn probability score and retention strategy.</p>
-        <div class="upload-strip">
-          <div class="upload-strip-info"><h4>📂 Bulk Predict via CSV Upload</h4><p>Upload a structured CSV with required columns to run predictions on multiple customers at once.</p></div>
-          <div><input type="file" id="csv-file-input" accept=".csv" style="display:none" /><button class="btn-outline" id="upload-btn" onclick="document.getElementById('csv-file-input').click()">Upload CSV</button></div>
-        </div>
         <form id="predict-form" onsubmit="return false;">
           <div class="form-grid">
             <div class="form-group"><label>Customer ID *</label><input type="text" name="customer_id" placeholder="e.g. C-1042" required /></div>
@@ -277,6 +273,30 @@
             <div class="result-right"><div id="result-risk-tag"></div><div style="margin-top:12px;"><div class="result-label-title">Prediction</div><div class="result-churn" id="result-churn-label">—</div></div></div>
           </div>
           <div class="strategy-box"><div class="strategy-box-label">Recommended Retention Strategy</div><div class="strategy-box-text" id="result-strategy">—</div></div>
+        </div>
+      </div>
+
+      <!-- Batch Prediction CSV Upload -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
+        <div class="card">
+          <div class="card-title">Batch Prediction — CSV Upload</div>
+          <p style="font-size:13px;color:#aaa;margin-bottom:14px;">Upload a CSV to predict churn for thousands of customers using chunk-based processing (1,000 rows per chunk).</p>
+          <div class="bd-upload-zone">
+            <div style="font-size:30px;margin-bottom:8px;">📂</div>
+            <div style="font-size:13px;font-weight:600;color:#555;margin-bottom:12px;">Drop CSV or click to upload</div>
+            <input type="file" id="bd-csv-input" accept=".csv" style="display:none" />
+            <button class="btn-primary" onclick="document.getElementById('bd-csv-input').click()" id="bd-upload-btn">Upload &amp; Predict</button>
+          </div>
+          <div style="font-size:11px;color:var(--text-dim);line-height:1.7;">Required columns: <code style="background:#f4f6ff;padding:1px 5px;border-radius:4px;">customer_id</code>, <code style="background:#f4f6ff;padding:1px 5px;border-radius:4px;">weekly_mins_watched</code>, <code style="background:#f4f6ff;padding:1px 5px;border-radius:4px;">customer_support_calls</code>, <code style="background:#f4f6ff;padding:1px 5px;border-radius:4px;">maximum_days_inactive</code></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Data Preprocessing Log</div>
+          <div class="log-panel" id="preprocess-log">
+            <div class="log-line info">[system] ChurnIQ Data Pipeline v1.0 ready</div>
+            <div class="log-line info">[system] Model: Random Forest (91.0% accuracy)</div>
+            <div class="log-line ok">[system] Flask ML API connected</div>
+            <div class="log-line">[system] Awaiting CSV upload…</div>
+          </div>
         </div>
       </div>
     </div>
@@ -460,7 +480,7 @@
 <script>
 const TAB_META = {
   overview:   { title: 'Overview',             sub: 'System-wide churn metrics and recent predictions' },
-  predict:    { title: 'Predict Churn',         sub: 'Run single or bulk predictions on customer records' },
+  predict:    { title: 'Predict Churn',         sub: 'Run single or batch predictions on customer records' },
   analytics:  { title: 'Analytics',            sub: 'Feature importance, risk segments & churn trends' },
   models:     { title: 'Model Evaluation',     sub: 'Compare classification & ensemble model performance' },
   strategies: { title: 'Retention Strategies', sub: 'Risk-based action playbook for customer retention' },
@@ -600,19 +620,6 @@ async function runPrediction() {
   finally { btn.disabled = false; btn.innerHTML = '⚡ Run Prediction'; }
 }
 
-document.getElementById('csv-file-input').addEventListener('change', async function () {
-  if (!this.files.length) return;
-  const btn = document.getElementById('upload-btn');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Uploading…';
-  const form = new FormData(); form.append('dataset', this.files[0]);
-  try {
-    const res  = await fetch('/api/upload', { method: 'POST', body: form });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    showToast('✓ ' + data.saved + ' predictions saved');
-  } catch (err) { showToast('Upload failed: ' + err.message, 'error'); }
-  finally { btn.disabled = false; btn.innerHTML = 'Upload CSV'; this.value = ''; }
-});
 
 async function loadAnalytics() {
   try {

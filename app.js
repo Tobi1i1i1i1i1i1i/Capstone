@@ -36,6 +36,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'client', 'dist')));
 
 // ── Session ───────────────────────────────────────────────────────────────────
 app.use(session({
@@ -68,7 +69,7 @@ app.use('/api', apiRoutes);
 
 // ── Dashboard (protected EJS view) ───────────────────────────────────────────
 app.get('/dashboard', ensureAuth, (req, res) => {
-  res.render('dashboard', { user: req.user });
+  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
 });
 
 // ── Google OAuth ──────────────────────────────────────────────────────────────

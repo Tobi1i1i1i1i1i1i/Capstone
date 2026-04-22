@@ -570,4 +570,8 @@ router.get('/models/comparison', async (req, res) => {
   res.json(models);
 });
 
+router.get('/me', (req, res) => {
+  res.json({ name: req.user.name, email: req.user.email, avatar: req.user.avatar || null });
+});
+
 module.exports = router;
