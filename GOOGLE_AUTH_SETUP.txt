@@ -1,0 +1,27 @@
+=== Google OAuth Setup for Team Members ===
+
+1. Create a .env file in the project root with the following content:
+
+PORT=3000
+MONGODB_URI=mongodb://127.0.0.1:27017/loginpage
+SESSION_SECRET=some-long-random-string
+GOOGLE_CLIENT_ID=<ask pancham for this>
+GOOGLE_CLIENT_SECRET=<ask pancham for this>
+GOOGLE_CALLBACK_URL=http://localhost:3000/auth/google/callback
+
+   --> Contact pancham.mitra23@st.niituniversity.in for the actual credentials.
+
+2. Make sure MongoDB is running locally on port 27017.
+
+3. Install dependencies:
+   npm install
+
+4. Start the server:
+   node app.js
+
+5. Open http://localhost:3000/login and click "Continue with Google"
+
+NOTE: Your Google account must be added as a test user by the project owner
+to use Google login while the app is in Testing mode.
+Ask Pancham to add your email at:
+Google Cloud Console > Google Auth Platform > Audience > Test Users
