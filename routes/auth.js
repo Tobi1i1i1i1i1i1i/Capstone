@@ -26,6 +26,7 @@ router.get('/signup', ensureGuest, (req, res) => {
 });
 
 router.get('/dashboard', ensureAuth, (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.render('dashboard', { user: req.user });
 });
 

@@ -67,10 +67,6 @@ app.use('/', authRoutes);
 // ── ChurnIQ API routes (all protected inside routes/api.js) ───────────────────
 app.use('/api', apiRoutes);
 
-// ── Dashboard (protected EJS view) ───────────────────────────────────────────
-app.get('/dashboard', ensureAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
-});
 
 // ── Google OAuth ──────────────────────────────────────────────────────────────
 app.get('/auth/google',
