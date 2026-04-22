@@ -24,62 +24,73 @@ passport.use(new LocalStrategy(
   async (email, password, done) => {
     try {
       const user = await User.findOne({ email: email.toLowerCase() });
+
       if (!user) {
         return done(null, false, { message: 'No account with that email.' });
       }
+
       if (!user.password) {
         return done(null, false, { message: 'This account uses Google login. Please sign in with Google.' });
       }
+
       const isMatch = await user.comparePassword(password);
+
       if (!isMatch) {
         return done(null, false, { message: 'Incorrect password.' });
       }
+
       return done(null, user);
+
     } catch (err) {
       return done(err);
     }
   }
 ));
 
-// ──── Google OAuth Strategy ────
-passport.use(new GoogleStrategy(
-  {
-    clientID:     process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL:  process.env.GOOGLE_CALLBACK_URL || '/auth/google/callback',
-  },
-  async (accessToken, refreshToken, profile, done) => {
-    try {
-      // Find existing user by googleId or email
-      let user = await User.findOne({ googleId: profile.id });
+// ──── Google OAuth Strategy (ONLY IF ENV EXISTS) ────
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 
-      if (!user) {
-        const email = profile.emails?.[0]?.value;
-        if (email) {
-          user = await User.findOne({ email });
+  passport.use(new GoogleStrategy(
+    {
+      clientID:     process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL:  process.env.GOOGLE_CALLBACK_URL || '/auth/google/callback',
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        let user = await User.findOne({ googleId: profile.id });
+
+        if (!user) {
+          const email = profile.emails?.[0]?.value;
+
+          if (email) {
+            user = await User.findOne({ email });
+          }
+
+          if (user) {
+            user.googleId = profile.id;
+            user.avatar   = user.avatar || profile.photos?.[0]?.value || '';
+            await user.save();
+          } else {
+            user = await User.create({
+              googleId: profile.id,
+              name:     profile.displayName,
+              email:    profile.emails?.[0]?.value,
+              avatar:   profile.photos?.[0]?.value || '',
+            });
+          }
         }
 
-        if (user) {
-          // Link Google account to existing email/password account
-          user.googleId = profile.id;
-          user.avatar   = user.avatar || profile.photos?.[0]?.value || '';
-          await user.save();
-        } else {
-          // Create new user from Google profile
-          user = await User.create({
-            googleId: profile.id,
-            name:     profile.displayName,
-            email:    profile.emails?.[0]?.value,
-            avatar:   profile.photos?.[0]?.value || '',
-          });
-        }
+        return done(null, user);
+
+      } catch (err) {
+        return done(err, null);
       }
-
-      return done(null, user);
-    } catch (err) {
-      return done(err, null);
     }
-  }
-));
+  ));
+
+} else {
+  console.log("⚠️ Google OAuth disabled (no client ID/secret provided)");
+}
 
 module.exports = passport;
