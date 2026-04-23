@@ -77,3 +77,4 @@ volumes:
 #   db-password:
 #     file: db/password.txt
 
+# Configure services for app and MongoDB
