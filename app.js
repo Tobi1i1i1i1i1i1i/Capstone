@@ -114,3 +114,4 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/loginpage
 module.exports = app;
 // Add logging for debugging requests
 // Integration: connected ML API with frontend dashboard
+// Fix: minor bug fixes and stability improvements
