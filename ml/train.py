@@ -102,3 +102,4 @@ if __name__ == '__main__':
 # Normalize numerical features for better model performance
 # Split dataset into training and testing sets
 # Train Random Forest classifier on processed data
+# Save trained model and scaler for future predictions
