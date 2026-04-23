@@ -119,3 +119,4 @@ class PredictionEngine:
             'features':   FEATURES,
             'has_scaler': self.scaler is not None,
         }
+# Load trained model and preprocessing objects
