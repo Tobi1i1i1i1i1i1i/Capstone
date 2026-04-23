@@ -13,6 +13,7 @@ services:
   ml:
     build:
       context: ./ml
+      network: host
     restart: always
     environment:
       MODEL_PATH:  /app/model.pkl
@@ -25,6 +26,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      network: host
     restart: always
     environment:
       NODE_ENV:             production
@@ -47,6 +49,7 @@ services:
   frontend:
     build:
       context: ./client
+      network: host
     restart: always
     ports:
       - "80:80"
