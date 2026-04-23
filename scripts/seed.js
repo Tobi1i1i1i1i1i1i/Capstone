@@ -159,7 +159,7 @@ async function seed() {
         churn_prediction:     prediction,
         churn_probability:    probability,
         risk_category:        risk,
-        recommended_strategy: strategy,
+        recommended_strategies: [strategy],
         model_used:           'Random Forest',
         model_version:        '1.0',
         input_snapshot:       features,

@@ -5,3 +5,7 @@ node_modules/
 churn_dataset.csv
 uploads/tmp/*
 !uploads/tmp/.gitkeep
+__pycache__/
+*.pyc
+*.pyo
+graphify-out/
