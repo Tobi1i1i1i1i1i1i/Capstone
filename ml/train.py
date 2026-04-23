@@ -95,3 +95,6 @@ if __name__ == '__main__':
     parser.add_argument('--out',  default='.',                    help='Output directory for .pkl files')
     args = parser.parse_args()
     train(args.data, args.out)
+
+# Step 1: Initialize churn model training pipeline
+
