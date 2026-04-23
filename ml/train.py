@@ -100,3 +100,4 @@ if __name__ == '__main__':
 # Handle missing values using basic imputation
 # Encode categorical features like gender and subscription type
 # Normalize numerical features for better model performance
+# Split dataset into training and testing sets
