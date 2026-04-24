@@ -8,6 +8,12 @@ services:
       - mongo-data:/data/db
     expose:
       - "27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ── ML Service (Flask) ────────────────────────────────────────────────────
   ml:
@@ -20,6 +26,12 @@ services:
       SCALER_PATH: /app/scaler.pkl
     expose:
       - "5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   # ── Backend (Node.js / Express) ───────────────────────────────────────────
   backend:
@@ -37,13 +49,13 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_CALLBACK_URL:  ${GOOGLE_CALLBACK_URL}
       ML_API_URL:           http://ml:5000
-      MODEL_PATH:           /usr/src/app/ml/model.pkl
-      SCALER_PATH:          /usr/src/app/ml/scaler.pkl
     expose:
       - "3000"
     depends_on:
-      - mongo
-      - ml
+      mongo:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
 
   # ── Frontend (React → nginx) ──────────────────────────────────────────────
   frontend:

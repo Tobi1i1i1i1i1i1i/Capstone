@@ -67,13 +67,28 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                    # Copy .env from project directory if not present in workspace
-                    if [ ! -f .env ] && [ -f /home/pancham/Downloads/loginpage/.env ]; then
-                        cp /home/pancham/Downloads/loginpage/.env .env
+                    # Locate .env from standard locations (works on any machine)
+                    if [ ! -f .env ]; then
+                        for candidate in \
+                            /etc/churniq/.env \
+                            "$HOME/.churniq/.env" \
+                            /var/jenkins_home/churniq.env \
+                            "$HOME/churniq.env"; do
+                            if [ -f "$candidate" ]; then
+                                echo "Using .env from $candidate"
+                                cp "$candidate" .env
+                                break
+                            fi
+                        done
                     fi
 
-                    # Release ports 80, 3000, 5000 held by any existing containers
-                    docker ps --format "{{.ID}} {{.Ports}}" | grep -E "0.0.0.0:(80|3000|5000)" | awk "{print \$1}" | xargs -r docker stop || true
+                    if [ ! -f .env ]; then
+                        echo "ERROR: No .env file found. Place your .env at /etc/churniq/.env or $HOME/.churniq/.env on this machine."
+                        exit 1
+                    fi
+
+                    # Release ports 3000, 5000 held by any existing containers
+                    docker ps --format "{{.ID}} {{.Ports}}" | grep -E "0.0.0.0:(3000|5000)" | awk "{print \$1}" | xargs -r docker stop || true
 
                     docker compose down --remove-orphans || true
                     docker compose up -d
