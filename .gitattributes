@@ -1,5 +1,6 @@
-# Always use LF line endings for shell scripts
-*.sh text eol=lf
+# Always use LF line endings for shell scripts and env files
+*.sh  text eol=lf
+.env* text eol=lf
 
 # Keep other text files normalized
 * text=auto
